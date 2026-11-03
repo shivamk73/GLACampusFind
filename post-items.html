@@ -1,0 +1,746 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore Lost & Found - CampusFind</title>
+
+    <script>
+    const token = localStorage.getItem("token");
+    const loggedIn = localStorage.getItem("loggedIn");
+
+    if (!token || loggedIn !== "true") {
+        window.location.replace("login.html");
+    }
+</script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fb;
+            color: #14213d;
+        }
+
+        nav {
+            background-color: #14213d;
+            padding: 20px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 25px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 92%;
+            margin: 35px auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 34px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 28px;
+            line-height: 1.6;
+        }
+
+        .search-box {
+            background-color: white;
+            padding: 22px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+
+        #searchInput:focus {
+            outline: 2px solid #fca311;
+            border-color: #fca311;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filters button {
+            padding: 11px 20px;
+            border: none;
+            border-radius: 7px;
+            background-color: #e2e8f0;
+            color: #14213d;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .filters button:hover {
+            background-color: #cbd5e1;
+        }
+
+        .filters button.active {
+            background-color: #fca311;
+        }
+
+        #postCount {
+            margin: 20px 0;
+            color: #64748b;
+            font-weight: bold;
+        }
+
+        #postsContainer {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 22px;
+            align-items: stretch;
+        }
+
+        .post {
+            background-color: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .post:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 9px 22px rgba(0, 0, 0, 0.10);
+        }
+
+        .photo-box {
+            width: 100%;
+            height: 220px;
+            background-color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .photo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .no-photo {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .post-content {
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .type {
+            display: inline-block;
+            align-self: flex-start;
+            padding: 6px 10px;
+            border-radius: 5px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .lost {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .found {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .post h2 {
+            font-size: 21px;
+            margin-bottom: 13px;
+            overflow-wrap: anywhere;
+        }
+
+        .post p {
+            margin-bottom: 9px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+            color: #475569;
+            font-size: 14px;
+        }
+
+        .post p strong {
+            color: #14213d;
+        }
+
+        .return-status {
+            display: inline-block;
+            align-self: flex-start;
+            padding: 7px 10px;
+            margin: 7px 0 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .available {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .waiting {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .returned {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .contact-button {
+            padding: 10px 14px;
+            margin: 8px 0;
+            background-color: #fca311;
+            color: #14213d;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .contact-button:hover {
+            background-color: #e89400;
+        }
+
+        .contact-button:disabled {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        .contact-details {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 7px;
+            padding: 12px;
+            margin: 5px 0 12px;
+        }
+
+        .contact-details p {
+            overflow-wrap: anywhere;
+        }
+
+        .login-message {
+            color: #991b1b;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .login-message a {
+            color: #14213d;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        #noPosts {
+            background-color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+            color: #64748b;
+            line-height: 1.6;
+            grid-column: 1 / -1;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            color: #14213d;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            color: #b96c00;
+        }
+
+        @media (max-width: 950px) {
+            #postsContainer {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 600px) {
+            nav {
+                padding: 18px;
+            }
+
+            nav a {
+                font-size: 21px;
+            }
+
+            .container {
+                width: 94%;
+                margin: 25px auto;
+            }
+
+            h1 {
+                font-size: 27px;
+            }
+
+            #postsContainer {
+                grid-template-columns: 1fr;
+            }
+
+            .photo-box {
+                height: 240px;
+            }
+
+            .filters button {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <a href="CampusFind.html">GLACampusFind</a>
+    </nav>
+
+    <div class="container">
+
+        <h1>Explore Lost & Found</h1>
+
+        <p class="subtitle">
+            Find lost belongings or help someone reconnect with their items.
+        </p>
+
+        <div class="search-box">
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search by item name, category or location..."
+                aria-label="Search item posts">
+
+            <div class="filters">
+                <button type="button" class="active" data-filter="All">
+                    All Posts
+                </button>
+
+                <button type="button" data-filter="Lost Item">
+                    Lost Items
+                </button>
+
+                <button type="button" data-filter="Found Item">
+                    Found Items
+                </button>
+            </div>
+        </div>
+
+        <p id="postCount">Showing 0 posts</p>
+
+        <div id="postsContainer"></div>
+
+        <p id="noPosts" hidden></p>
+
+        <a href="CampusFind.html" class="back-link">
+            ← Back to Home
+        </a>
+
+    </div>
+
+    <script>
+
+        const searchInput = document.getElementById("searchInput");
+        const postsContainer = document.getElementById("postsContainer");
+        const postCount = document.getElementById("postCount");
+        const noPosts = document.getElementById("noPosts");
+        const filterButtons = document.querySelectorAll("[data-filter]");
+
+        let selectedFilter = "All";
+        let allPosts = [];
+        let loadingError = false;
+
+
+        // FETCH POSTS FROM MONGODB
+        async function loadPosts() {
+            noPosts.hidden = false;
+            noPosts.textContent = "Loading posts...";
+
+            try {
+                const response = await fetch("http://localhost:3000/api/posts");
+
+                if (!response.ok) {
+                    throw new Error("Unable to fetch posts");
+                }
+
+                const posts = await response.json();
+
+                if (!Array.isArray(posts)) {
+                    throw new Error("Invalid posts data");
+                }
+
+                allPosts = posts;
+                loadingError = false;
+
+                displayPosts();
+
+            } catch (error) {
+                console.error("Fetch posts error:", error);
+
+                allPosts = [];
+                loadingError = true;
+
+                displayPosts();
+            }
+        }
+
+
+        // CREATE A DETAIL PARAGRAPH
+        function addDetail(container, label, value) {
+            if (value === undefined || value === null || value === "") {
+                return;
+            }
+
+            const paragraph = document.createElement("p");
+            const strong = document.createElement("strong");
+
+            strong.textContent = label + ": ";
+            paragraph.appendChild(strong);
+
+            paragraph.appendChild(
+                document.createTextNode(String(value))
+            );
+
+            container.appendChild(paragraph);
+        }
+
+
+        // SHOW FINDER CONTACT DETAILS
+        function addContactSection(post, item) {
+
+            const fullName = [
+                item.firstName,
+                item.lastName
+            ].filter(Boolean).join(" ");
+
+            addDetail(
+                post,
+                "Finder",
+                fullName || "Name not available"
+            );
+
+            const contactButton = document.createElement("button");
+            contactButton.type = "button";
+            contactButton.className = "contact-button";
+            contactButton.textContent = "Contact Finder";
+
+            const contactDetails = document.createElement("div");
+            contactDetails.className = "contact-details";
+            contactDetails.hidden = true;
+
+            const loginMessage = document.createElement("p");
+            loginMessage.className = "login-message";
+            loginMessage.hidden = true;
+
+            contactButton.addEventListener("click", async function () {
+
+                const token = localStorage.getItem("token");
+
+                if (!token || localStorage.getItem("loggedIn") !== "true") {
+
+                    loginMessage.textContent =
+                        "Please login or register to view contact details.";
+
+                    const loginLink = document.createElement("a");
+                    loginLink.href = "login.html";
+                    loginLink.textContent = "Login";
+
+                    const registerLink = document.createElement("a");
+                    registerLink.href = "register.html";
+                    registerLink.textContent = "Register";
+
+                    loginMessage.replaceChildren(
+                        document.createTextNode(
+                            "Please login or register to view contact details. "
+                        ),
+                        loginLink,
+                        document.createTextNode(" | "),
+                        registerLink
+                    );
+
+                    loginMessage.hidden = false;
+                    contactDetails.hidden = true;
+
+                    return;
+                }
+
+                loginMessage.hidden = true;
+
+                if (!contactDetails.hidden) {
+                    contactDetails.hidden = true;
+                    contactButton.textContent = "Contact Finder";
+                    return;
+                }
+
+                contactButton.disabled = true;
+                contactButton.textContent = "Loading...";
+
+                try {
+
+                    const response = await fetch(
+                        `http://localhost:3000/api/posts/${encodeURIComponent(item._id)}/contact`,
+                        {
+                            headers: {
+                                "Authorization": "Bearer " + token
+                            }
+                        }
+                    );
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            data.message || "Unable to fetch contact details."
+                        );
+                    }
+
+                    if (!data.mobile || !data.email) {
+                        throw new Error(
+                            "Finder contact details are incomplete."
+                        );
+                    }
+
+                    contactDetails.innerHTML = "";
+
+                    addDetail(contactDetails, "Mobile", data.mobile);
+                    addDetail(contactDetails, "Email", data.email);
+
+                    contactDetails.hidden = false;
+                    contactButton.textContent = "Hide Contact Details";
+
+                } catch (error) {
+
+                    loginMessage.textContent = error.message;
+                    loginMessage.hidden = false;
+
+                    contactDetails.hidden = true;
+                    contactButton.textContent = "Contact Finder";
+
+                } finally {
+                    contactButton.disabled = false;
+                }
+            });
+
+            post.appendChild(contactButton);
+            post.appendChild(loginMessage);
+            post.appendChild(contactDetails);
+        }
+
+
+        // DISPLAY POSTS
+        function displayPosts() {
+
+            const searchText = searchInput.value.trim().toLowerCase();
+
+            const filteredPosts = allPosts.filter(function (item) {
+
+                const matchesType =
+                    selectedFilter === "All" ||
+                    item.type === selectedFilter;
+
+                const searchableText = [
+                    item.itemName,
+                    item.category,
+                    item.location,
+                    item.description
+                ].filter(Boolean).join(" ").toLowerCase();
+
+                return matchesType &&
+                    searchableText.includes(searchText);
+            });
+
+            postsContainer.innerHTML = "";
+
+            postCount.textContent =
+                "Showing " + filteredPosts.length +
+                (filteredPosts.length === 1 ? " post" : " posts");
+
+            if (loadingError) {
+                noPosts.hidden = false;
+                noPosts.textContent =
+                    "Unable to load posts. Please check whether the backend server is running.";
+                return;
+            }
+
+            if (filteredPosts.length === 0) {
+                noPosts.hidden = false;
+
+                if (allPosts.length === 0) {
+                    noPosts.textContent =
+                        "No posts have been added yet.";
+                } else {
+                    noPosts.textContent =
+                        "No matching posts found. Try another search or filter.";
+                }
+
+                return;
+            }
+
+            noPosts.hidden = true;
+
+            filteredPosts.forEach(function (item) {
+
+                const post = document.createElement("article");
+                post.className = "post";
+
+                // PHOTO
+                const photoBox = document.createElement("div");
+                photoBox.className = "photo-box";
+
+                if (item.photo) {
+                    const photo = document.createElement("img");
+                    photo.src = item.photo;
+                    photo.alt = item.itemName || "Item photo";
+                    photo.loading = "lazy";
+
+                    photoBox.appendChild(photo);
+
+                } else {
+                    const noPhoto = document.createElement("span");
+                    noPhoto.className = "no-photo";
+                    noPhoto.textContent = "No photo uploaded";
+
+                    photoBox.appendChild(noPhoto);
+                }
+
+                post.appendChild(photoBox);
+
+                // POST CONTENT
+                const content = document.createElement("div");
+                content.className = "post-content";
+
+                const type = document.createElement("span");
+
+                type.className = "type " +
+                    (item.type === "Found Item" ? "found" : "lost");
+
+                type.textContent = item.type || "Item";
+
+                content.appendChild(type);
+
+                const heading = document.createElement("h2");
+                heading.textContent = item.itemName || "Untitled item";
+
+                content.appendChild(heading);
+
+                addDetail(content, "Category", item.category);
+                addDetail(content, "Description", item.description);
+                addDetail(content, "Location", item.location);
+                addDetail(content, "Date", item.date);
+
+                // FOUND ITEM STATUS
+                if (item.type === "Found Item") {
+
+                    addDetail(content, "Current Status", item.currentStatus);
+
+                    const status = document.createElement("div");
+                    status.className = "return-status";
+
+                    if (item.returnStatus === "confirmed") {
+                        status.classList.add("returned");
+                        status.textContent =
+                            "Returned - Confirmed by Both";
+
+                    } else if (item.returnStatus === "waiting") {
+                        status.classList.add("waiting");
+                        status.textContent =
+                            "Waiting for Owner Confirmation";
+
+                    } else {
+                        status.classList.add("available");
+                        status.textContent = "Available";
+                    }
+
+                    content.appendChild(status);
+
+                    // FINDER CONTACT
+                    addContactSection(content, item);
+                }
+
+                post.appendChild(content);
+                postsContainer.appendChild(post);
+            });
+        }
+
+
+        // FILTER BUTTONS
+        filterButtons.forEach(function (button) {
+
+            button.addEventListener("click", function () {
+
+                selectedFilter = button.dataset.filter;
+
+                filterButtons.forEach(function (btn) {
+                    btn.classList.remove("active");
+                });
+
+                button.classList.add("active");
+
+                displayPosts();
+            });
+        });
+
+
+        // SEARCH
+        searchInput.addEventListener("input", displayPosts);
+
+
+        // REFRESH POSTS WHEN RETURNING TO PAGE
+        window.addEventListener("focus", loadPosts);
+
+
+        // LOAD POSTS WHEN PAGE OPENS
+        loadPosts();
+
+    </script>
+
+</body>
+</html>

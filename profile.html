@@ -1,0 +1,475 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - CampusFind</title>
+
+    <style>
+        body {
+            background-color: burlywood;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1, h2 {
+            color: black;
+        }
+
+        .profile, .posts {
+            background-color: white;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        .post {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            background-color: white;
+        }
+
+        button {
+            padding: 8px 15px;
+            margin: 8px 5px 0 0;
+            cursor: pointer;
+        }
+
+        .status {
+            font-weight: bold;
+            color: #166534;
+        }
+
+        .status.waiting {
+            color: #b45309;
+        }
+
+        .status.returned {
+            color: #166534;
+        }
+
+        .return-button {
+            background-color: #16a34a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .confirm-button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .delete-button {
+            background-color: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .post-photo {
+            max-width: 200px;
+            max-height: 200px;
+            object-fit: contain;
+            display: block;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>My Profile</h1>
+    <button id="logoutButton" type="button">Logout</button>
+
+    <div class="profile">
+        <h2>My Details</h2>
+        <p><b>First Name:</b> <span id="firstName">Not available</span></p>
+        <p><b>Last Name:</b> <span id="lastName">Not available</span></p>
+        <p><b>Mobile:</b> <span id="mobile">Not available</span></p>
+        <p><b>Email:</b> <span id="email">Not available</span></p>
+    </div>
+
+    <div class="posts">
+        <h2>My Posts</h2>
+        <div id="myPosts"></div>
+    </div>
+
+    <br>
+    <a href="CampusFind.html">Back to Home</a>
+
+
+<script>
+    const API_URL = "http://localhost:3000/api";
+
+    const token = localStorage.getItem("token");
+
+    // Check login
+    if (
+        localStorage.getItem("loggedIn") !== "true" ||
+        !token
+    ) {
+        window.location.replace("login.html");
+    } else {
+
+        // Get profile details
+        const email = localStorage.getItem("email") || "";
+
+        document.getElementById("firstName").textContent =
+            localStorage.getItem("firstName") || "Not available";
+
+        document.getElementById("lastName").textContent =
+            localStorage.getItem("lastName") || "Not available";
+
+        document.getElementById("mobile").textContent =
+            localStorage.getItem("mobile") || "Not available";
+
+        document.getElementById("email").textContent =
+            email || "Not available";
+
+
+        // Clear login data
+        function logout() {
+            localStorage.removeItem("loggedIn");
+            localStorage.removeItem("token");
+            localStorage.removeItem("firstName");
+            localStorage.removeItem("lastName");
+            localStorage.removeItem("mobile");
+            localStorage.removeItem("email");
+
+            window.location.replace("login.html");
+        }
+
+
+        // Logout
+        document.getElementById("logoutButton")
+            .addEventListener("click", logout);
+
+
+        // Common authorization headers
+        function getAuthHeaders() {
+            return {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            };
+        }
+
+
+        // Handle expired or invalid token
+        function checkUnauthorized(response) {
+            if (response.status === 401) {
+                alert("Your login has expired. Please login again.");
+                logout();
+                return true;
+            }
+
+            return false;
+        }
+
+
+        // Fetch logged-in student's posts
+        async function getPosts() {
+            try {
+                const response = await fetch(
+                    `${API_URL}/my-posts`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                if (checkUnauthorized(response)) {
+                    return null;
+                }
+
+                const posts = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        posts.message || "Failed to fetch posts."
+                    );
+                }
+
+                return posts;
+
+            } catch (error) {
+                console.error("Get posts error:", error);
+
+                document.getElementById("myPosts").textContent =
+                    error.message;
+
+                return null;
+            }
+        }
+
+
+        // Display MongoDB posts
+        async function displayPosts() {
+            const postsContainer =
+                document.getElementById("myPosts");
+
+            postsContainer.innerHTML =
+                "<p>Loading your posts...</p>";
+
+            const posts = await getPosts();
+
+            if (posts === null) return;
+
+            postsContainer.innerHTML = "";
+
+            if (posts.length === 0) {
+                postsContainer.innerHTML =
+                    "<p>No posts found.</p>";
+
+                return;
+            }
+
+            posts.forEach(function (post) {
+
+                const postCard = document.createElement("div");
+                postCard.className = "post";
+
+                // Display photo
+                if (post.photo) {
+                    const image = document.createElement("img");
+
+                    image.src = post.photo;
+                    image.alt = post.itemName || "Item photo";
+                    image.className = "post-photo";
+
+                    postCard.appendChild(image);
+                }
+
+                const details = document.createElement("div");
+
+                const heading = document.createElement("h3");
+                heading.textContent =
+                    post.itemName || "Unnamed Item";
+
+                details.appendChild(heading);
+
+
+                // Add post details
+                function addDetail(label, value) {
+                    if (
+                        value === undefined ||
+                        value === null ||
+                        value === ""
+                    ) {
+                        return;
+                    }
+
+                    const paragraph = document.createElement("p");
+                    const bold = document.createElement("strong");
+
+                    bold.textContent = label + ": ";
+
+                    paragraph.appendChild(bold);
+
+                    paragraph.appendChild(
+                        document.createTextNode(String(value))
+                    );
+
+                    details.appendChild(paragraph);
+                }
+
+                addDetail("Type", post.type);
+                addDetail("Category", post.category);
+                addDetail("Description", post.description);
+                addDetail("Location", post.location);
+                addDetail("Date", post.date);
+                addDetail("Item Status", post.currentStatus);
+
+
+                // Return status
+                if (post.type === "Found Item") {
+
+                    const status = document.createElement("p");
+                    status.className = "status";
+
+                    const label = document.createElement("strong");
+                    label.textContent = "Return Status: ";
+
+                    status.appendChild(label);
+
+                    let statusText = "Available";
+
+                    if (post.returnStatus === "waiting") {
+                        statusText =
+                            "Waiting for Owner Confirmation";
+
+                        status.classList.add("waiting");
+
+                    } else if (post.returnStatus === "confirmed") {
+                        statusText =
+                            "Returned - Confirmed by Both";
+
+                        status.classList.add("returned");
+                    }
+
+                    status.appendChild(
+                        document.createTextNode(statusText)
+                    );
+
+                    details.appendChild(status);
+                }
+
+                postCard.appendChild(details);
+
+
+                // Mark as Returned button
+                if (
+                    post.type === "Found Item" &&
+                    post.returnStatus !== "confirmed"
+                ) {
+                    const returnedButton =
+                        document.createElement("button");
+
+                    returnedButton.type = "button";
+                    returnedButton.textContent = "Mark as Returned";
+                    returnedButton.className = "return-button";
+
+                    returnedButton.addEventListener("click", function () {
+                        updatePost(post._id, "waiting");
+                    });
+
+                    postCard.appendChild(returnedButton);
+                }
+
+
+                // Confirm Received button
+                if (
+                    post.type === "Found Item" &&
+                    post.returnStatus === "waiting"
+                ) {
+                    const confirmButton =
+                        document.createElement("button");
+
+                    confirmButton.type = "button";
+
+                    confirmButton.textContent =
+                        "Confirm Received (Demo)";
+
+                    confirmButton.className = "confirm-button";
+
+                    confirmButton.addEventListener("click", function () {
+                        updatePost(post._id, "confirmed");
+                    });
+
+                    postCard.appendChild(confirmButton);
+                }
+
+
+                // Delete Post button
+                const deleteButton =
+                    document.createElement("button");
+
+                deleteButton.type = "button";
+                deleteButton.textContent = "Delete Post";
+                deleteButton.className = "delete-button";
+
+                deleteButton.addEventListener("click", function () {
+                    if (
+                        confirm(
+                            "Are you sure you want to delete this post?"
+                        )
+                    ) {
+                        deletePost(post._id);
+                    }
+                });
+
+                postCard.appendChild(deleteButton);
+
+                postsContainer.appendChild(postCard);
+            });
+        }
+
+
+        // Update return status in MongoDB
+        async function updatePost(postId, newStatus) {
+            try {
+                const response = await fetch(
+                    `${API_URL}/posts/${postId}/return-status`,
+                    {
+                        method: "PATCH",
+
+                        headers: getAuthHeaders(),
+
+                        body: JSON.stringify({
+                            returnStatus: newStatus
+                        })
+                    }
+                );
+
+                if (checkUnauthorized(response)) return;
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        result.message || "Update failed."
+                    );
+                }
+
+                alert(result.message);
+
+                displayPosts();
+
+            } catch (error) {
+                alert(error.message);
+
+                console.error("Update error:", error);
+            }
+        }
+
+
+        // Delete post from MongoDB
+        async function deletePost(postId) {
+            try {
+                const response = await fetch(
+                    `${API_URL}/posts/${postId}`,
+                    {
+                        method: "DELETE",
+
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                if (checkUnauthorized(response)) return;
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        result.message || "Delete failed."
+                    );
+                }
+
+                alert(result.message);
+
+                displayPosts();
+
+            } catch (error) {
+                alert(error.message);
+
+                console.error("Delete error:", error);
+            }
+        }
+
+
+        // Load posts when profile opens
+        displayPosts();
+    }
+</script>
+
+</body>
+</html>

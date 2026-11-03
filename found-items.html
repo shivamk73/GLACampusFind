@@ -1,0 +1,424 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Report Found Item - CampusFind</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fb;
+            color: #14213d;
+        }
+
+        nav {
+            background-color: #14213d;
+            padding: 20px 35px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 25px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 650px;
+            width: 92%;
+            margin: 35px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 15px;
+            font-family: Arial, sans-serif;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #fca311;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .contact-box {
+            background-color: #f4f7fb;
+            border: 1px solid #dbe3ef;
+            padding: 18px;
+            border-radius: 8px;
+            margin-bottom: 22px;
+        }
+
+        .contact-box h3 {
+            margin-bottom: 8px;
+        }
+
+        .contact-box p {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: #fca311;
+            color: #14213d;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #e89400;
+        }
+
+        #message {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .auth-buttons a {
+            flex: 1;
+            text-align: center;
+            padding: 13px;
+            background-color: #fca311;
+            color: #14213d;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 6px;
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <a href="CampusFind.html">GLACampusFind</a>
+    </nav>
+
+    <div class="container">
+
+        <!-- Login Required Message -->
+        <div id="loginRequired" style="display: none; text-align: center;">
+            <h1>Login Required</h1>
+
+            <p class="subtitle">
+                Please login or register before reporting a found item.
+            </p>
+
+            <div class="auth-buttons">
+                <a href="login.html">Login</a>
+                <a href="register.html">Register</a>
+            </div>
+        </div>
+
+
+        <!-- Found Item Form -->
+        <div id="foundFormContainer" style="display: none;">
+
+            <h1>Report a Found Item</h1>
+
+            <p class="subtitle">
+                Found something on campus? Help it reach its owner.
+            </p>
+
+            <form id="foundItemForm">
+
+                <div class="form-group">
+                    <label for="itemName">Item Name *</label>
+                    <input
+                        type="text"
+                        id="itemName"
+                        name="itemName"
+                        placeholder="e.g. Wallet, Mobile, ID Card"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label for="category">Item Category *</label>
+                    <select id="category" name="category" required>
+                        <option value="">Select category</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="ID Card">ID Card</option>
+                        <option value="Wallet">Wallet</option>
+                        <option value="Books">Books</option>
+                        <option value="Accessories">Accessories</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Item Description *</label>
+                    <textarea
+                        id="description"
+                        name="description"
+                        placeholder="Describe the item, its colour or identifying features"
+                        required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="location">Where did you find it? *</label>
+                    <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        placeholder="e.g. College library, CSE block"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label for="foundDate">Date Found *</label>
+                    <input
+                        type="date"
+                        id="foundDate"
+                        name="foundDate"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label for="photo">Upload Item Photo (optional)</label>
+                    <input
+                        type="file"
+                        id="photo"
+                        name="photo"
+                        accept="image/*">
+                </div>
+
+                <div class="form-group">
+                    <label for="currentStatus">Where is the item now? *</label>
+                    <select id="currentStatus" name="currentStatus" required>
+                        <option value="">Select current status</option>
+                        <option value="With me">I have the item with me</option>
+                        <option value="Submitted to security">
+                            Submitted to college security
+                        </option>
+                        <option value="Submitted to office">
+                            Submitted to college office
+                        </option>
+                        <option value="Other">Other location</option>
+                    </select>
+                </div>
+
+                <div class="contact-box">
+                    <h3>Your Contact Details</h3>
+
+                    <p>
+                        Your registered first name and last name will be
+                        associated with this report.
+                    </p>
+
+                    <p>
+                        Your mobile number and email should be retrieved
+                        from your registered account after login. They
+                        will not be displayed publicly.
+                    </p>
+
+                    <p>
+                        Logged-in students can use the Contact Finder
+                        feature to view your contact details.
+                    </p>
+                </div>
+
+                <button type="submit">Submit Found Item Report</button>
+
+                <p id="message" role="status"></p>
+
+            </form>
+        </div>
+
+    </div>
+
+
+<script>
+    const form = document.getElementById("foundItemForm");
+    const message = document.getElementById("message");
+
+    const token = localStorage.getItem("token");
+    const loggedIn = localStorage.getItem("loggedIn");
+
+    // Check login when page opens
+    if (loggedIn === "true" && token) {
+        document.getElementById("foundFormContainer").style.display = "block";
+    } else {
+        document.getElementById("loginRequired").style.display = "block";
+    }
+
+
+    // Submit Found Item Report
+    form.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        if (
+            localStorage.getItem("loggedIn") !== "true" ||
+            !localStorage.getItem("token")
+        ) {
+            alert("Please login before posting a found item.");
+            window.location.href = "login.html";
+            return;
+        }
+
+        const currentToken = localStorage.getItem("token");
+
+        const photoFile = document.getElementById("photo").files[0];
+
+        if (photoFile && photoFile.size > 20 * 1024 * 1024) {
+            message.style.color = "red";
+            message.textContent = "Photo size must be 20 MB or less.";
+            return;
+        }
+
+        message.style.color = "black";
+        message.textContent = "Submitting your report...";
+
+        try {
+            let photoData = "";
+
+            if (photoFile) {
+                photoData = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+
+                    reader.onload = () => resolve(reader.result);
+
+                    reader.onerror = () => reject(
+                        new Error("Photo could not be read.")
+                    );
+
+                    reader.readAsDataURL(photoFile);
+                });
+            }
+
+            const postData = {
+                type: "Found Item",
+
+                itemName: document.getElementById("itemName").value.trim(),
+
+                category: document.getElementById("category").value,
+
+                description: document.getElementById("description").value.trim(),
+
+                location: document.getElementById("location").value.trim(),
+
+                date: document.getElementById("foundDate").value,
+
+                currentStatus: document.getElementById("currentStatus").value,
+
+                photo: photoData,
+
+                returnStatus: "available"
+            };
+
+            const response = await fetch(
+                "http://localhost:3000/api/posts",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + currentToken
+                    },
+
+                    body: JSON.stringify(postData)
+                }
+            );
+
+            const data = await response.json();
+
+            if (response.status === 401) {
+                localStorage.removeItem("loggedIn");
+                localStorage.removeItem("token");
+
+                alert("Your login has expired. Please login again.");
+
+                window.location.href = "login.html";
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message || "Post submission failed."
+                );
+            }
+
+            message.style.color = "green";
+
+            message.textContent =
+                "Found item saved successfully!";
+
+            form.reset();
+
+        } catch (error) {
+            console.error("Found item error:", error);
+
+            message.style.color = "red";
+
+            message.textContent =
+                error.message === "Failed to fetch"
+                    ? "Backend connection failed. Check your server."
+                    : error.message;
+        }
+    });
+</script>
+
+</body>
+</html>

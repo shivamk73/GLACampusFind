@@ -1,0 +1,354 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Report Lost Item - CampusFind</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fb;
+            color: #14213d;
+        }
+
+        nav {
+            background-color: #14213d;
+            padding: 20px 35px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 25px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 650px;
+            width: 92%;
+            margin: 35px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 15px;
+            font-family: Arial, sans-serif;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #fca311;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .contact-box {
+            background-color: #f4f7fb;
+            border: 1px solid #dbe3ef;
+            padding: 18px;
+            border-radius: 8px;
+            margin-bottom: 22px;
+        }
+
+        .contact-box h3 {
+            margin-bottom: 8px;
+        }
+
+        .contact-box p {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: #fca311;
+            color: #14213d;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #e89400;
+        }
+
+        #message {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .auth-message {
+            text-align: center;
+        }
+
+        .auth-message p {
+            margin: 15px 0;
+            color: #64748b;
+        }
+
+        .auth-message a {
+            display: inline-block;
+            margin: 8px;
+            padding: 12px 25px;
+            background-color: #fca311;
+            color: #14213d;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <a href="CampusFind.html">GLACampusFind</a>
+    </nav>
+
+    <div class="container" id="loginRequired" style="display: none;">
+
+        <h1>Login Required</h1>
+
+        <div class="auth-message">
+            <p>Please login or register before reporting a lost item.</p>
+
+            <a href="login.html">Login</a>
+            <a href="register.html">Register</a>
+        </div>
+
+    </div>
+
+    <div class="container" id="lostFormContainer" style="display: none;">
+
+        <h1>Report a Lost Item</h1>
+
+        <p class="subtitle">
+            Tell us what you lost so it can be found.
+        </p>
+
+        <form id="lostItemForm">
+
+            <div class="form-group">
+                <label for="itemName">Item Name *</label>
+                <input type="text" id="itemName" name="itemName"
+                    placeholder="e.g. Wallet, Mobile, ID Card" required>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Item Category *</label>
+                <select id="category" name="category" required>
+                    <option value="">Select category</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="ID Card">ID Card</option>
+                    <option value="Wallet">Wallet</option>
+                    <option value="Books">Books</option>
+                    <option value="Accessories">Accessories</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Item Description *</label>
+                <textarea id="description" name="description"
+                    placeholder="Describe the item, its colour or any identifying feature"
+                    required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="location">Where did you lose it? *</label>
+                <input type="text" id="location" name="location"
+                    placeholder="e.g. College library, CSE block" required>
+            </div>
+
+            <div class="form-group">
+                <label for="lostDate">Date Lost *</label>
+                <input type="date" id="lostDate" name="lostDate" required>
+            </div>
+
+            <div class="form-group">
+                <label for="photo">Upload Item Photo (optional)</label>
+                <input type="file" id="photo" name="photo" accept="image/*">
+            </div>
+
+            <div class="contact-box">
+                <h3>Your Contact Details</h3>
+                <p>
+                    Your first name and last name will be associated
+                    with this report. Your registered mobile number
+                    and email should be retrieved from your account
+                    after login.
+                </p>
+                <p>
+                    Contact details will only be shown to logged-in
+                    students through the Contact Finder feature.
+                </p>
+            </div>
+
+            <button type="submit">Submit Lost Item Report</button>
+
+            <p id="message" role="status"></p>
+
+        </form>
+
+    </div>
+
+    <script>
+        const token = localStorage.getItem("token");
+
+        const loginRequired = document.getElementById("loginRequired");
+        const lostFormContainer = document.getElementById("lostFormContainer");
+
+        // Check login before showing the form
+        if (!token || localStorage.getItem("loggedIn") !== "true") {
+            loginRequired.style.display = "block";
+        } else {
+            lostFormContainer.style.display = "block";
+        }
+
+        const form = document.getElementById("lostItemForm");
+        const message = document.getElementById("message");
+
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const ownerEmail = localStorage.getItem("email");
+            const firstName = localStorage.getItem("firstName");
+            const lastName = localStorage.getItem("lastName");
+
+            if (!token || !ownerEmail || !firstName || !lastName) {
+                message.style.color = "red";
+                message.textContent = "Please login again before posting.";
+                return;
+            }
+
+            const photoInput = document.getElementById("photo");
+            const photoFile = photoInput.files[0];
+
+            // 20 MB photo limit
+            if (photoFile && photoFile.size > 20 * 1024 * 1024) {
+                message.style.color = "red";
+                message.textContent = "Photo size must be 20 MB or less.";
+                return;
+            }
+
+            message.style.color = "black";
+            message.textContent = "Submitting your report...";
+
+            try {
+                let photoData = "";
+
+                if (photoFile) {
+                    photoData = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(
+                            new Error("Photo could not be read.")
+                        );
+
+                        reader.readAsDataURL(photoFile);
+                    });
+                }
+
+                const postData = {
+                    type: "Lost Item",
+                    itemName: document.getElementById("itemName").value.trim(),
+                    category: document.getElementById("category").value,
+                    description: document.getElementById("description").value.trim(),
+                    location: document.getElementById("location").value.trim(),
+                    date: document.getElementById("lostDate").value,
+                    photo: photoData,
+                    ownerEmail,
+                    firstName,
+                    lastName
+                };
+
+                const response = await fetch("http://localhost:3000/api/posts", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify(postData)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Post submission failed.");
+                }
+
+                message.style.color = "green";
+                message.textContent = "Lost item saved successfully!";
+
+                form.reset();
+
+            } catch (error) {
+                console.error("Lost item error:", error);
+
+                message.style.color = "red";
+                message.textContent =
+                    error.message === "Failed to fetch"
+                        ? "Backend connection failed. Check your server."
+                        : error.message;
+            }
+        });
+    </script>
+
+</body>
+</html>

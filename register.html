@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>register - GLACampusFind</title>
+    <style> *
+     {
+         margin: 0; padding: 0; box-sizing: border-box;
+         }
+          body {
+             font-family: Arial, sans-serif; background-color: #f4f7fb; color: #14213d;
+             } 
+             nav { background-color: #14213d; padding: 20px 35px; 
+            }
+              nav a 
+              { color: white; text-decoration: none; font-size: 25px; font-weight: bold;
+             }
+              .container 
+              { width: 90%; max-width: 500px; margin: 40px auto; background-color: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+             }
+              h1 
+              { text-align: center; margin-bottom: 10px;
+             }
+              .subtitle 
+              { text-align: center; color: #666; margin-bottom: 25px;
+             }
+              .form-group 
+              { 
+                margin-bottom: 18px;
+             }
+              label 
+              { 
+                display: block; margin-bottom: 7px; font-weight: bold; 
+            } 
+            input 
+            {
+                 width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px;
+                 }
+                  input:focus 
+                  { 
+                    outline: none; border-color: #fca311; 
+                }
+                 button 
+                 { width: 100%; padding: 13px; background-color: #fca311; color: #14213d; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;
+                 } 
+                 button:hover { 
+                    background-color: #e89400;
+                 } 
+                 .login-link
+                  { 
+                    text-align: center; margin-top: 20px; 
+                }
+                 .login-link a { 
+                    color: #14213d; font-weight: bold; 
+                }
+                 #message 
+                 {
+                     margin-top: 15px; text-align: center;
+                     }
+                      @media (max-width: 500px) 
+                      { 
+                        .container 
+                        {
+                             padding: 22px; margin-top: 25px; 
+                            } } 
+
+    </style>
+</head>
+<body>
+    <nav> 
+        <a href="CampusFind.html">GLACampusFind</a>
+    </nav>
+
+    <div class="container">
+        <h1>Create Account</h1>
+
+        <p class="subtitle">
+            join GLACampusFind and reconnect with your belongings.
+        </p>
+
+        <form id="registrationForm">
+            <div class="form-group">
+                <label for="firstName">First Name *</label>
+
+                <input type="text"
+                id="firstName"
+                name="firstName"
+                placeholder="Enter first name"
+                required>
+            </div>
+
+            <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <input type="text"
+                id="lastName"
+                name="lastName"
+                placeholder="Enter last name"
+                required>
+            </div>
+
+            <div class="form-group">
+                <label for="mobile">Mobile Number *</label>
+                <input type="tel"
+                id="mobile"
+                name="mobile"
+                placeholder="Enter 10-digit mobile number"
+                pattern="[0-9]{10}"
+                maxlength="10"
+                inputmode="numeric"
+                title="Enter a 10-digit mobile number"
+                required>
+            </div>
+             <div class="form-group">
+                <label for="email">Email Id *</label>
+                <input type="email"
+                id="email"
+                name="email"
+                placeholder="Enter your email"
+                required>
+             </div>
+
+             <div class="form-group">
+                <label for="password">Password *</label>
+                <input type="password"
+                id="password"
+                name="password"
+                placeholder="Create a password"
+                minlength="8"
+                required>
+             </div>
+             <div class="form-group">
+                <label for="confirmPassword">Confirm Password *</label>
+                <input type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                placeholder="Enter password again"
+                minlength="8"
+                required>
+             </div>
+
+             <button type="submit">Register</button>
+             <p id="message" role="status"></p>
+        </form>
+
+        <p class="login-link">
+            Already have an account?
+            <a href="login.html">Login here</a>
+        </p>
+    </div>
+    
+<script>
+    
+
+    const form = document.getElementById("registrationForm");
+
+    form.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const firstName = document.getElementById("firstName").value.trim();
+        const lastName = document.getElementById("lastName").value.trim();
+        const mobile = document.getElementById("mobile").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+        const message = document.getElementById("message");
+
+        if (password !== confirmPassword) {
+            message.style.color = "red";
+            message.textContent = "Passwords do not match!";
+            return;
+        }
+
+        try {
+            const response = await fetch("http://localhost:3000/api/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    firstName,
+                    lastName,
+                    mobile,
+                    email,
+                    password
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Registration failed.");
+            }
+
+            message.style.color = "green";
+            message.textContent = data.message || "Registration successful!";
+
+            form.reset();
+
+        } catch (error) {
+            message.style.color = "red";
+            message.textContent =
+                error.message === "Failed to fetch"
+                    ? "Backend se connection nahi ho raha. Server check karo."
+                    : error.message;
+        }
+    });
+</script>
+
+
+  
+
+</body>
+</html>
