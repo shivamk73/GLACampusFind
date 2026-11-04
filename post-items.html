@@ -405,7 +405,7 @@
             noPosts.textContent = "Loading posts...";
 
             try {
-                const response = await fetch("http://localhost:3000/api/posts");
+                const response = await fetch("https://campusfind-backend-oazn.onrender.com/api/posts");
 
                 if (!response.ok) {
                     throw new Error("Unable to fetch posts");
