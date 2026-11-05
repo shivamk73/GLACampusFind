@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - CampusFind</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #14213d;
+        }
+
+        button {
+            padding: 9px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+        }
+
+        #logoutBtn {
+            background: #dc2626;
+        }
+
+        .post {
+            background: white;
+            padding: 15px;
+            margin: 15px auto;
+            max-width: 700px;
+            border-radius: 8px;
+        }
+
+        .post img {
+            max-width: 200px;
+            max-height: 180px;
+            object-fit: cover;
+            display: block;
+            margin: 10px 0;
+        }
+
+        .deleteBtn {
+            background: #dc2626;
+        }
+
+        #message {
+            text-align: center;
+            margin: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>CampusFind Admin Dashboard</h1>
+
+    <button id="logoutBtn">Logout</button>
+
+    <p id="message">Checking admin access...</p>
+    <div id="posts"></div>
+
+    <script>
+        const API = "https://campusfind-backend-oazn.onrender.com";
+        const token = localStorage.getItem("token");
+
+        const message = document.getElementById("message");
+        const postsContainer = document.getElementById("posts");
+
+        function logout() {
+            localStorage.removeItem("token");
+            localStorage.removeItem("loggedIn");
+            localStorage.removeItem("role");
+            localStorage.removeItem("firstName");
+            localStorage.removeItem("lastName");
+            localStorage.removeItem("mobile");
+            localStorage.removeItem("email");
+
+            window.location.href = "login.html";
+        }
+
+        document.getElementById("logoutBtn").addEventListener("click", logout);
+
+        async function checkAdmin() {
+            if (!token) {
+                alert("Please login first.");
+                window.location.href = "login.html";
+                return;
+            }
+
+            try {
+                const response = await fetch(API + "/api/admin/check", {
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                });
+
+                if (!response.ok) {
+                    alert("Admin access denied.");
+                    window.location.href = "profile.html";
+                    return;
+                }
+
+                loadPosts();
+
+            } catch (error) {
+                message.textContent = "Backend connection failed.";
+            }
+        }
+
+        async function loadPosts() {
+            try {
+                message.textContent = "Loading posts...";
+
+                const response = await fetch(API + "/api/admin/posts", {
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Could not load posts.");
+                }
+
+                postsContainer.replaceChildren();
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    message.textContent = "No posts found.";
+                    return;
+                }
+
+                message.textContent = "Total Posts: " + data.length;
+
+                data.forEach(post => {
+                    const card = document.createElement("div");
+                    card.className = "post";
+
+                    function addText(tag, value) {
+                        const element = document.createElement(tag);
+                        element.textContent = value || "Not available";
+                        card.appendChild(element);
+                    }
+
+                    addText("h3", post.itemName);
+                    addText("p", "Type: " + (post.type || ""));
+                    addText("p", "Category: " + (post.category || ""));
+                    addText("p", "Description: " + (post.description || ""));
+                    addText("p", "Location: " + (post.location || ""));
+                    addText("p", "Date: " + (post.date || ""));
+                    addText("p", "Posted by: " +
+                        ((post.firstName || "") + " " + (post.lastName || "")).trim());
+                    addText("p", "Status: " + (post.currentStatus || "Available"));
+
+                    if (post.photo && typeof post.photo === "string") {
+                        const img = document.createElement("img");
+                        img.src = post.photo;
+                        img.alt = "Post image";
+                        card.appendChild(img);
+                    }
+
+                    const deleteButton = document.createElement("button");
+                    deleteButton.className = "deleteBtn";
+                    deleteButton.textContent = "Delete Post";
+
+                    deleteButton.addEventListener("click", () => {
+                        deletePost(post._id);
+                    });
+
+                    card.appendChild(deleteButton);
+                    postsContainer.appendChild(card);
+                });
+
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        }
+
+        async function deletePost(id) {
+            if (!confirm("Are you sure you want to delete this post?")) {
+                return;
+            }
+
+            try {
+                const response = await fetch(API + "/api/posts/" + encodeURIComponent(id), {
+                    method: "DELETE",
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Delete failed.");
+                }
+
+                alert("Post deleted successfully!");
+                loadPosts();
+
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        checkAdmin();
+    </script>
+
+</body>
+</html>
