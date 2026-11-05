@@ -75,6 +75,17 @@
             background: #dc2626;
         }
 
+        .viewDetailsBtn {
+            background: #2563eb;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        #backToStudentsBtn {
+            background: #14213d;
+            margin-bottom: 15px;
+        }
+
         #message,
         #studentMessage {
             text-align: center;
@@ -117,6 +128,67 @@
             color: #14213d;
             font-size: 18px;
         }
+
+        /* STUDENT DETAILS */
+        #studentDetailsSection {
+            display: none;
+            max-width: 1000px;
+            margin: 25px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        #studentDetailsSection h2 {
+            margin-top: 10px;
+        }
+
+        .student-info {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .student-info p {
+            margin: 10px 0;
+            overflow-wrap: anywhere;
+        }
+
+        .student-post {
+            background: #f8fafc;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+
+        .student-post img {
+            max-width: 200px;
+            max-height: 180px;
+            object-fit: cover;
+            display: block;
+            margin: 10px 0;
+        }
+
+        #detailsMessage {
+            text-align: center;
+            margin: 15px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            #studentDetailsSection {
+                padding: 12px;
+            }
+
+            button {
+                margin-top: 5px;
+            }
+        }
     </style>
 </head>
 
@@ -129,7 +201,7 @@
     <p id="message">Checking admin access...</p>
 
     <!-- MANAGE STUDENTS -->
-    <h2>Manage Students</h2>
+    <h2 id="manageStudentsHeading">Manage Students</h2>
 
     <p id="studentCount" class="student-count">
         Total Students: 0
@@ -145,7 +217,7 @@
 
     <p id="studentMessage">Loading students...</p>
 
-    <div class="table-container">
+    <div class="table-container" id="studentsTableContainer">
         <table>
             <thead>
                 <tr>
@@ -161,6 +233,25 @@
             <tbody id="studentsTable"></tbody>
         </table>
     </div>
+
+    <!-- STUDENT DETAILS SECTION -->
+    <section id="studentDetailsSection">
+
+        <button id="backToStudentsBtn">
+            Back to Students
+        </button>
+
+        <h2>Student Details</h2>
+
+        <div id="studentDetails"></div>
+
+        <h2>Student's Lost & Found Posts</h2>
+
+        <p id="detailsMessage"></p>
+
+        <div id="studentPosts"></div>
+
+    </section>
 
     <!-- MANAGE POSTS -->
     <h2>Manage Posts</h2>
@@ -178,6 +269,18 @@
         const studentMessage = document.getElementById("studentMessage");
         const studentCount = document.getElementById("studentCount");
         const studentSearch = document.getElementById("studentSearch");
+
+        const studentDetailsSection =
+            document.getElementById("studentDetailsSection");
+
+        const studentDetails =
+            document.getElementById("studentDetails");
+
+        const studentPosts =
+            document.getElementById("studentPosts");
+
+        const detailsMessage =
+            document.getElementById("detailsMessage");
 
         let allStudents = [];
 
@@ -220,6 +323,8 @@
                     window.location.href = "profile.html";
                     return;
                 }
+
+                message.textContent = "Admin access verified.";
 
                 loadPosts();
                 loadStudents();
@@ -303,12 +408,27 @@
 
                 const actionCell = document.createElement("td");
 
+                // VIEW DETAILS BUTTON
+                const viewButton = document.createElement("button");
+
+                viewButton.className = "viewDetailsBtn";
+                viewButton.textContent = "View Details";
+
+                viewButton.addEventListener("click", () => {
+                    viewStudentDetails(student._id);
+                });
+
+                actionCell.appendChild(viewButton);
+
                 // ADMIN ACCOUNT CANNOT BE DELETED
                 if (
                     student.role &&
                     student.role.toLowerCase() === "admin"
                 ) {
-                    actionCell.textContent = "Protected Admin";
+                    const protectedText = document.createElement("p");
+                    protectedText.textContent = "Protected Admin";
+                    actionCell.appendChild(protectedText);
+
                 } else {
                     const deleteButton = document.createElement("button");
 
@@ -350,6 +470,161 @@
 
             displayStudents(filteredStudents);
         });
+
+        // VIEW INDIVIDUAL STUDENT DETAILS
+        async function viewStudentDetails(id) {
+            studentDetailsSection.style.display = "block";
+
+            studentDetails.replaceChildren();
+            studentPosts.replaceChildren();
+
+            detailsMessage.textContent = "Loading student details...";
+
+            studentDetailsSection.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+
+            try {
+                const response = await fetch(
+                    API + "/api/admin/students/" +
+                    encodeURIComponent(id),
+                    {
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.message || "Could not load student details."
+                    );
+                }
+
+                const student = data.student;
+                const posts = data.posts;
+
+                if (!student) {
+                    throw new Error("Student details not found.");
+                }
+
+                // DISPLAY STUDENT PROFILE
+                const infoBox = document.createElement("div");
+                infoBox.className = "student-info";
+
+                function addInfo(label, value) {
+                    const paragraph = document.createElement("p");
+                    const strong = document.createElement("strong");
+
+                    strong.textContent = label + ": ";
+
+                    paragraph.appendChild(strong);
+                    paragraph.appendChild(
+                        document.createTextNode(value || "Not available")
+                    );
+
+                    infoBox.appendChild(paragraph);
+                }
+
+                addInfo(
+                    "Name",
+                    ((student.firstName || "") + " " +
+                    (student.lastName || "")).trim()
+                );
+
+                addInfo("Email", student.email);
+                addInfo("Mobile Number", student.mobile);
+                addInfo("Role", student.role);
+
+                studentDetails.appendChild(infoBox);
+
+                // DISPLAY STUDENT POSTS
+                studentPosts.replaceChildren();
+
+                const studentPostList =
+                    Array.isArray(posts) ? posts : [];
+
+                detailsMessage.textContent =
+                    "Total Posts: " + studentPostList.length;
+
+                if (studentPostList.length === 0) {
+                    const noPosts = document.createElement("p");
+                    noPosts.textContent =
+                        "No posts found for this student.";
+
+                    studentPosts.appendChild(noPosts);
+                    return;
+                }
+
+                studentPostList.forEach(post => {
+                    const card = document.createElement("div");
+                    card.className = "student-post";
+
+                    function addPostText(label, value) {
+                        const paragraph = document.createElement("p");
+                        const strong = document.createElement("strong");
+
+                        strong.textContent = label + ": ";
+
+                        paragraph.appendChild(strong);
+                        paragraph.appendChild(
+                            document.createTextNode(value || "Not available")
+                        );
+
+                        card.appendChild(paragraph);
+                    }
+
+                    const heading = document.createElement("h3");
+                    heading.textContent = post.itemName || "Unnamed Item";
+                    card.appendChild(heading);
+
+                    addPostText("Type", post.type);
+                    addPostText("Category", post.category);
+                    addPostText("Description", post.description);
+                    addPostText("Location", post.location);
+                    addPostText("Date", post.date);
+                    addPostText(
+                        "Status",
+                        post.currentStatus || "Available"
+                    );
+
+                    if (post.returnStatus) {
+                        addPostText("Return Status", post.returnStatus);
+                    }
+
+                    if (
+                        post.photo &&
+                        typeof post.photo === "string"
+                    ) {
+                        const image = document.createElement("img");
+                        image.src = post.photo;
+                        image.alt = "Student's posted item";
+                        image.loading = "lazy";
+                        card.appendChild(image);
+                    }
+
+                    studentPosts.appendChild(card);
+                });
+
+            } catch (error) {
+                detailsMessage.textContent = error.message;
+            }
+        }
+
+        // BACK TO STUDENTS
+        document.getElementById("backToStudentsBtn")
+            .addEventListener("click", function () {
+                studentDetailsSection.style.display = "none";
+
+                document.getElementById("manageStudentsHeading")
+                    .scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+            });
 
         // DELETE STUDENT AND ALL THEIR POSTS
         async function deleteStudent(id) {
@@ -393,6 +668,7 @@
                 );
 
                 studentSearch.value = "";
+                studentDetailsSection.style.display = "none";
 
                 await loadStudents();
                 await loadPosts();
