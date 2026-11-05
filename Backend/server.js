@@ -15,9 +15,27 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "25mb" }));
 
+// ADMIN EMAIL FROM RENDER ENVIRONMENT
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL
+    ? process.env.ADMIN_EMAIL.trim().toLowerCase()
+    : "";
 
-// VERIFY LOGIN TOKEN
-function verifyToken(req, res, next) {
+// CHECK REQUIRED ENVIRONMENT VARIABLES
+if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is missing.");
+}
+
+if (!process.env.MONGO_URI) {
+    throw new Error("MONGO_URI is missing.");
+}
+
+if (!ADMIN_EMAIL) {
+    throw new Error("ADMIN_EMAIL is missing.");
+}
+
+
+// VERIFY LOGIN TOKEN AND FETCH USER FROM DATABASE
+async function verifyToken(req, res, next) {
     try {
         const authHeader = req.headers.authorization;
 
@@ -34,7 +52,18 @@ function verifyToken(req, res, next) {
             process.env.JWT_SECRET
         );
 
-        req.userEmail = decoded.email;
+        const student = await Student.findOne({
+            email: decoded.email.trim().toLowerCase()
+        }).select("-password");
+
+        if (!student) {
+            return res.status(401).json({
+                message: "User account not found. Please login again."
+            });
+        }
+
+        req.user = student;
+        req.userEmail = student.email;
 
         next();
 
@@ -46,12 +75,41 @@ function verifyToken(req, res, next) {
 }
 
 
+// VERIFY ADMIN ROLE
+function requireAdmin(req, res, next) {
+    const isAdmin =
+        req.user &&
+        req.user.role === "admin" &&
+        req.user.email.toLowerCase() === ADMIN_EMAIL;
+
+    if (!isAdmin) {
+        return res.status(403).json({
+            message: "Access denied. Admin permission required."
+        });
+    }
+
+    next();
+}
+
+
 // REGISTER API
 app.post("/api/register", async (req, res) => {
     try {
-        const { firstName, lastName, mobile, email, password } = req.body;
+        const {
+            firstName,
+            lastName,
+            mobile,
+            email,
+            password
+        } = req.body;
 
-        if (!firstName || !lastName || !mobile || !email || !password) {
+        if (
+            !firstName ||
+            !lastName ||
+            !mobile ||
+            !email ||
+            !password
+        ) {
             return res.status(400).json({
                 message: "All fields are required."
             });
@@ -77,6 +135,9 @@ app.post("/api/register", async (req, res) => {
             mobile,
             email: normalizedEmail,
             password: hashedPassword
+
+            // Role is automatically student.
+            // Never accept role from registration form.
         });
 
         await student.save();
@@ -133,6 +194,10 @@ app.post("/api/login", async (req, res) => {
             { expiresIn: "7d" }
         );
 
+        const isAdmin =
+            student.role === "admin" &&
+            student.email.toLowerCase() === ADMIN_EMAIL;
+
         res.status(200).json({
             message: "Login successful!",
             token,
@@ -140,7 +205,8 @@ app.post("/api/login", async (req, res) => {
                 firstName: student.firstName,
                 lastName: student.lastName,
                 mobile: student.mobile,
-                email: student.email
+                email: student.email,
+                role: isAdmin ? "admin" : "student"
             }
         });
 
@@ -152,6 +218,43 @@ app.post("/api/login", async (req, res) => {
         });
     }
 });
+
+
+// ADMIN CHECK API
+app.get(
+    "/api/admin/check",
+    verifyToken,
+    requireAdmin,
+    (req, res) => {
+        res.status(200).json({
+            message: "Admin access granted.",
+            role: "admin"
+        });
+    }
+);
+
+
+// ADMIN - GET ALL POSTS FOR ADMIN DASHBOARD
+app.get(
+    "/api/admin/posts",
+    verifyToken,
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const posts = await Post.find()
+                .sort({ createdAt: -1 });
+
+            res.status(200).json(posts);
+
+        } catch (error) {
+            console.error("Admin posts error:", error);
+
+            res.status(500).json({
+                message: "Failed to fetch admin posts."
+            });
+        }
+    }
+);
 
 
 // CREATE POST API - LOGIN REQUIRED
@@ -197,16 +300,6 @@ app.post("/api/posts", verifyToken, async (req, res) => {
             });
         }
 
-        const student = await Student.findOne({
-            email: req.userEmail
-        });
-
-        if (!student) {
-            return res.status(404).json({
-                message: "Logged-in student not found."
-            });
-        }
-
         const newPost = new Post({
             type,
             itemName,
@@ -224,9 +317,9 @@ app.post("/api/posts", verifyToken, async (req, res) => {
                     ? (returnStatus || "available")
                     : "available",
 
-            ownerEmail: student.email,
-            firstName: student.firstName,
-            lastName: student.lastName
+            ownerEmail: req.user.email,
+            firstName: req.user.firstName,
+            lastName: req.user.lastName
         });
 
         await newPost.save();
@@ -271,6 +364,12 @@ app.get("/api/posts", async (req, res) => {
 // GET FINDER CONTACT DETAILS - LOGIN REQUIRED
 app.get("/api/posts/:id/contact", verifyToken, async (req, res) => {
     try {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({
+                message: "Invalid post ID."
+            });
+        }
+
         const post = await Post.findById(req.params.id);
 
         if (!post) {
@@ -314,7 +413,7 @@ app.get("/api/posts/:id/contact", verifyToken, async (req, res) => {
 app.get("/api/my-posts", verifyToken, async (req, res) => {
     try {
         const posts = await Post.find({
-            ownerEmail: req.userEmail
+            ownerEmail: req.user.email
         }).sort({ createdAt: -1 });
 
         res.status(200).json(posts);
@@ -329,9 +428,15 @@ app.get("/api/my-posts", verifyToken, async (req, res) => {
 });
 
 
-// UPDATE RETURN STATUS - LOGIN REQUIRED
+// UPDATE RETURN STATUS - POST OWNER ONLY
 app.patch("/api/posts/:id/return-status", verifyToken, async (req, res) => {
     try {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({
+                message: "Invalid post ID."
+            });
+        }
+
         const { returnStatus } = req.body;
 
         if (!["waiting", "confirmed"].includes(returnStatus)) {
@@ -343,7 +448,7 @@ app.patch("/api/posts/:id/return-status", verifyToken, async (req, res) => {
         const post = await Post.findOneAndUpdate(
             {
                 _id: req.params.id,
-                ownerEmail: req.userEmail,
+                ownerEmail: req.user.email,
                 type: "Found Item"
             },
             {
@@ -376,15 +481,44 @@ app.patch("/api/posts/:id/return-status", verifyToken, async (req, res) => {
 });
 
 
-// DELETE STUDENT'S OWN POST - LOGIN REQUIRED
+// DELETE POST - ADMIN CAN DELETE ANY POST
+// STUDENT CAN DELETE ONLY THEIR OWN POST
 app.delete("/api/posts/:id", verifyToken, async (req, res) => {
     try {
-        const post = await Post.findOneAndDelete({
-            _id: req.params.id,
-            ownerEmail: req.userEmail
-        });
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({
+                message: "Invalid post ID."
+            });
+        }
 
-        if (!post) {
+        const isAdmin =
+            req.user.role === "admin" &&
+            req.user.email.toLowerCase() === ADMIN_EMAIL;
+
+        let deletedPost;
+
+        if (isAdmin) {
+            deletedPost = await Post.findByIdAndDelete(
+                req.params.id
+            );
+        } else {
+            deletedPost = await Post.findOneAndDelete({
+                _id: req.params.id,
+                ownerEmail: req.user.email
+            });
+        }
+
+        if (!deletedPost) {
+            const postExists = await Post.exists({
+                _id: req.params.id
+            });
+
+            if (postExists) {
+                return res.status(403).json({
+                    message: "You can delete only your own post."
+                });
+            }
+
             return res.status(404).json({
                 message: "Post not found."
             });
@@ -418,9 +552,10 @@ mongoose.connect(process.env.MONGO_URI)
         console.log("MongoDB connected successfully!");
 
         app.listen(PORT, () => {
-            console.log(`Server running on http://localhost:${PORT}`);
+            console.log(`Server running on port ${PORT}`);
         });
     })
     .catch((error) => {
         console.error("MongoDB connection failed:", error);
+        process.exit(1);
     });
