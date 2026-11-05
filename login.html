@@ -109,13 +109,16 @@
         const message = document.getElementById("message");
 
         try {
-            const response = await fetch("https://campusfind-backend-oazn.onrender.com/api/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ email, password })
-            });
+            const response = await fetch(
+                "https://campusfind-backend-oazn.onrender.com/api/login",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ email, password })
+                }
+            );
 
             const data = await response.json();
 
@@ -123,13 +126,32 @@
                 throw new Error(data.message || "Login failed.");
             }
 
-            // Login details save
+            // Save login details
             localStorage.setItem("loggedIn", "true");
             localStorage.setItem("token", data.token);
             localStorage.setItem("firstName", data.student.firstName);
             localStorage.setItem("lastName", data.student.lastName);
             localStorage.setItem("mobile", data.student.mobile);
             localStorage.setItem("email", data.student.email);
+
+            // Verify admin access directly with backend
+            const adminCheck = await fetch(
+                "https://campusfind-backend-oazn.onrender.com/api/admin/check",
+                {
+                    method: "GET",
+                    headers: {
+                        "Authorization": "Bearer " + data.token
+                    }
+                }
+            );
+
+            if (adminCheck.ok) {
+                localStorage.setItem("role", "admin");
+            } else if (adminCheck.status === 403) {
+                localStorage.setItem("role", "student");
+            } else {
+                throw new Error("Role verification failed. Please try again.");
+            }
 
             message.style.color = "green";
             message.textContent = "Login successful!";
@@ -142,7 +164,7 @@
             message.style.color = "red";
             message.textContent =
                 error.message === "Failed to fetch"
-                    ? "Backend se connection nahi ho raha. Server check karo."
+                    ? "Backend se connection nahi ho raha."
                     : error.message;
         }
     });
