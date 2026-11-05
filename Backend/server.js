@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 
 const express = require("express");
@@ -275,6 +276,86 @@ app.get(
             res.status(500).json({
                 message: "Failed to fetch students."
             });
+        }
+    }
+);
+
+
+// ADMIN - DELETE STUDENT AND ALL THEIR POSTS
+app.delete(
+    "/api/admin/students/:id",
+    verifyToken,
+    requireAdmin,
+    async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({
+                message: "Invalid student ID."
+            });
+        }
+
+        const session = await mongoose.startSession();
+
+        try {
+            let result = null;
+
+            await session.withTransaction(async () => {
+                const student = await Student.findById(req.params.id)
+                    .session(session);
+
+                if (!student) {
+                    result = {
+                        status: 404,
+                        body: {
+                            message: "Student not found."
+                        }
+                    };
+                    return;
+                }
+
+                // Prevent deleting the admin account
+                if (
+                    student.role === "admin" ||
+                    student.email.trim().toLowerCase() === ADMIN_EMAIL
+                ) {
+                    result = {
+                        status: 403,
+                        body: {
+                            message: "Admin account cannot be deleted."
+                        }
+                    };
+                    return;
+                }
+
+                // Delete all posts created by this student
+                const postsResult = await Post.deleteMany({
+                    ownerEmail: student.email
+                }).session(session);
+
+                // Delete student account
+                await Student.deleteOne({
+                    _id: student._id
+                }).session(session);
+
+                result = {
+                    status: 200,
+                    body: {
+                        message: "Student and all their posts deleted successfully.",
+                        deletedPosts: postsResult.deletedCount
+                    }
+                };
+            });
+
+            return res.status(result.status).json(result.body);
+
+        } catch (error) {
+            console.error("Delete student error:", error);
+
+            return res.status(500).json({
+                message: "Failed to delete student and their posts."
+            });
+
+        } finally {
+            await session.endSession();
         }
     }
 );
