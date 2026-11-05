@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 
 const express = require("express");
@@ -251,6 +250,30 @@ app.get(
 
             res.status(500).json({
                 message: "Failed to fetch admin posts."
+            });
+        }
+    }
+);
+
+
+// ADMIN - GET ALL REGISTERED STUDENTS
+app.get(
+    "/api/admin/students",
+    verifyToken,
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const students = await Student.find()
+                .select("firstName lastName email mobile role")
+                .sort({ firstName: 1 });
+
+            res.status(200).json(students);
+
+        } catch (error) {
+            console.error("Admin students error:", error);
+
+            res.status(500).json({
+                message: "Failed to fetch students."
             });
         }
     }
