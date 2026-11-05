@@ -43,6 +43,17 @@
             margin: 15px auto;
         }
 
+        #studentSearch {
+            display: block;
+            width: 90%;
+            max-width: 500px;
+            padding: 12px;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 15px;
+        }
+
         .post {
             background: white;
             padding: 15px;
@@ -59,7 +70,8 @@
             margin: 10px 0;
         }
 
-        .deleteBtn {
+        .deleteBtn,
+        .deleteStudentBtn {
             background: #dc2626;
         }
 
@@ -70,7 +82,7 @@
         }
 
         .table-container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 20px auto;
             overflow-x: auto;
             background: white;
@@ -81,7 +93,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 650px;
+            min-width: 850px;
         }
 
         th, td {
@@ -123,6 +135,12 @@
         Total Students: 0
     </p>
 
+    <input
+        type="text"
+        id="studentSearch"
+        placeholder="Search by name, email or mobile number..."
+    >
+
     <button id="refreshStudentsBtn">Refresh Students</button>
 
     <p id="studentMessage">Loading students...</p>
@@ -136,11 +154,11 @@
                     <th>Email</th>
                     <th>Mobile Number</th>
                     <th>Role</th>
+                    <th>Action</th>
                 </tr>
             </thead>
 
-            <tbody id="studentsTable">
-            </tbody>
+            <tbody id="studentsTable"></tbody>
         </table>
     </div>
 
@@ -159,7 +177,11 @@
         const studentsTable = document.getElementById("studentsTable");
         const studentMessage = document.getElementById("studentMessage");
         const studentCount = document.getElementById("studentCount");
+        const studentSearch = document.getElementById("studentSearch");
 
+        let allStudents = [];
+
+        // LOGOUT
         function logout() {
             localStorage.removeItem("token");
             localStorage.removeItem("loggedIn");
@@ -178,6 +200,7 @@
         document.getElementById("refreshStudentsBtn")
             .addEventListener("click", loadStudents);
 
+        // CHECK ADMIN
         async function checkAdmin() {
             if (!token) {
                 alert("Please login first.");
@@ -233,43 +256,150 @@
                     throw new Error("Invalid students data received.");
                 }
 
+                allStudents = data;
+
                 studentCount.textContent =
-                    "Total Students: " + data.length;
+                    "Total Students: " + allStudents.length;
 
-                if (data.length === 0) {
-                    studentMessage.textContent =
-                        "No registered students found.";
-                    return;
-                }
-
-                studentMessage.textContent = "";
-
-                data.forEach((student, index) => {
-                    const row = document.createElement("tr");
-
-                    function addCell(value) {
-                        const cell = document.createElement("td");
-                        cell.textContent = value || "Not available";
-                        row.appendChild(cell);
-                    }
-
-                    addCell(index + 1);
-
-                    addCell(
-                        ((student.firstName || "") + " " +
-                        (student.lastName || "")).trim()
-                    );
-
-                    addCell(student.email);
-                    addCell(student.mobile);
-                    addCell(student.role);
-
-                    studentsTable.appendChild(row);
-                });
+                displayStudents(allStudents);
 
             } catch (error) {
                 studentMessage.textContent = error.message;
                 studentCount.textContent = "Total Students: 0";
+            }
+        }
+
+        // DISPLAY STUDENTS
+        function displayStudents(students) {
+            studentsTable.replaceChildren();
+
+            if (students.length === 0) {
+                studentMessage.textContent = "No students found.";
+                return;
+            }
+
+            studentMessage.textContent =
+                "Showing " + students.length + " student(s).";
+
+            students.forEach((student, index) => {
+                const row = document.createElement("tr");
+
+                function addCell(value) {
+                    const cell = document.createElement("td");
+                    cell.textContent = value || "Not available";
+                    row.appendChild(cell);
+                }
+
+                addCell(index + 1);
+
+                addCell(
+                    ((student.firstName || "") + " " +
+                    (student.lastName || "")).trim()
+                );
+
+                addCell(student.email);
+                addCell(student.mobile);
+                addCell(student.role);
+
+                const actionCell = document.createElement("td");
+
+                // ADMIN ACCOUNT CANNOT BE DELETED
+                if (
+                    student.role &&
+                    student.role.toLowerCase() === "admin"
+                ) {
+                    actionCell.textContent = "Protected Admin";
+                } else {
+                    const deleteButton = document.createElement("button");
+
+                    deleteButton.className = "deleteStudentBtn";
+                    deleteButton.textContent = "Delete Student";
+
+                    deleteButton.addEventListener("click", () => {
+                        deleteStudent(student._id);
+                    });
+
+                    actionCell.appendChild(deleteButton);
+                }
+
+                row.appendChild(actionCell);
+                studentsTable.appendChild(row);
+            });
+        }
+
+        // SEARCH STUDENTS
+        studentSearch.addEventListener("input", function () {
+            const searchValue = studentSearch.value
+                .trim()
+                .toLowerCase();
+
+            const filteredStudents = allStudents.filter(student => {
+                const name =
+                    ((student.firstName || "") + " " +
+                    (student.lastName || "")).toLowerCase();
+
+                const email = (student.email || "").toLowerCase();
+                const mobile = (student.mobile || "").toLowerCase();
+
+                return (
+                    name.includes(searchValue) ||
+                    email.includes(searchValue) ||
+                    mobile.includes(searchValue)
+                );
+            });
+
+            displayStudents(filteredStudents);
+        });
+
+        // DELETE STUDENT AND ALL THEIR POSTS
+        async function deleteStudent(id) {
+            const confirmed = confirm(
+                "Are you sure you want to delete this student?\n\n" +
+                "This will permanently delete:\n" +
+                "1. Student account\n" +
+                "2. All Lost Item posts\n" +
+                "3. All Found Item posts\n\n" +
+                "This action cannot be undone."
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                studentMessage.textContent = "Deleting student...";
+
+                const response = await fetch(
+                    API + "/api/admin/students/" + encodeURIComponent(id),
+                    {
+                        method: "DELETE",
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.message || "Student deletion failed."
+                    );
+                }
+
+                alert(
+                    data.message +
+                    "\nDeleted posts: " + (data.deletedPosts || 0)
+                );
+
+                studentSearch.value = "";
+
+                await loadStudents();
+                await loadPosts();
+
+            } catch (error) {
+                alert(error.message);
+                studentMessage.textContent = error.message;
             }
         }
 
