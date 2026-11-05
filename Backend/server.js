@@ -135,9 +135,6 @@ app.post("/api/register", async (req, res) => {
             mobile,
             email: normalizedEmail,
             password: hashedPassword
-
-            // Role is automatically student.
-            // Never accept role from registration form.
         });
 
         await student.save();
@@ -234,7 +231,7 @@ app.get(
 );
 
 
-// ADMIN - GET ALL POSTS FOR ADMIN DASHBOARD
+// ADMIN - GET ALL POSTS
 app.get(
     "/api/admin/posts",
     verifyToken,
@@ -281,6 +278,49 @@ app.get(
 );
 
 
+// ADMIN - GET INDIVIDUAL STUDENT DETAILS AND THEIR POSTS
+app.get(
+    "/api/admin/students/:id",
+    verifyToken,
+    requireAdmin,
+    async (req, res) => {
+        try {
+            if (!mongoose.isValidObjectId(req.params.id)) {
+                return res.status(400).json({
+                    message: "Invalid student ID."
+                });
+            }
+
+            const student = await Student.findById(req.params.id)
+                .select("-password");
+
+            if (!student) {
+                return res.status(404).json({
+                    message: "Student not found."
+                });
+            }
+
+            const posts = await Post.find({
+                ownerEmail: student.email.trim().toLowerCase()
+            }).sort({ createdAt: -1 });
+
+            res.status(200).json({
+                message: "Student details fetched successfully.",
+                student,
+                posts
+            });
+
+        } catch (error) {
+            console.error("Student details error:", error);
+
+            res.status(500).json({
+                message: "Failed to fetch student details."
+            });
+        }
+    }
+);
+
+
 // ADMIN - DELETE STUDENT AND ALL THEIR POSTS
 app.delete(
     "/api/admin/students/:id",
@@ -312,7 +352,6 @@ app.delete(
                     return;
                 }
 
-                // Prevent deleting the admin account
                 if (
                     student.role === "admin" ||
                     student.email.trim().toLowerCase() === ADMIN_EMAIL
@@ -326,12 +365,10 @@ app.delete(
                     return;
                 }
 
-                // Delete all posts created by this student
                 const postsResult = await Post.deleteMany({
                     ownerEmail: student.email
                 }).session(session);
 
-                // Delete student account
                 await Student.deleteOne({
                     _id: student._id
                 }).session(session);
