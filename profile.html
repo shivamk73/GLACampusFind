@@ -86,6 +86,10 @@
 
     <h1>My Profile</h1>
     <button id="logoutButton" type="button">Logout</button>
+    <a href="admin-dashboard.html" id="adminDashboardLink" 
+   style="display: none; margin-left: 10px;">
+    <button type="button">Admin Dashboard</button>
+</a>
 
     <div class="profile">
         <h2>My Details</h2>
@@ -109,6 +113,29 @@
 
     const token = localStorage.getItem("token");
 
+    // Show Admin Dashboard only after backend verification
+async function verifyAdminAccess() {
+    try {
+        const response = await fetch(
+            `${API_URL}/admin/check`,
+            {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            }
+        );
+
+        if (response.ok) {
+            document.getElementById("adminDashboardLink").style.display =
+                "inline-block";
+        }
+
+    } catch (error) {
+        console.error("Admin verification failed:", error);
+    }
+}
+
     // Check login
     if (
         localStorage.getItem("loggedIn") !== "true" ||
@@ -116,6 +143,8 @@
     ) {
         window.location.replace("login.html");
     } else {
+
+        verifyAdminAccess();
 
         // Get profile details
         const email = localStorage.getItem("email") || "";
